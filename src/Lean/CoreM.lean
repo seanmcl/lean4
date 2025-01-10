@@ -522,26 +522,28 @@ def compileDecl (decl : Declaration) : CoreM Unit := do
   let decls := Compiler.getDeclNamesForCodeGen decl
   if compiler.enableNew.get opts then
     compileDeclsNew decls
-  let res ← withTraceNode `compiler (fun _ => return m!"compiling old: {decls}") do
-    return compileDeclsOld (← getEnv) opts decls
-  match res with
-  | Except.ok env => setEnv env
-  | Except.error (KernelException.other msg) =>
-    checkUnsupported decl -- Generate nicer error message for unsupported recursors and axioms
-    throwError msg
-  | Except.error ex =>
-    throwKernelException ex
+  else
+    let res ← withTraceNode `compiler (fun _ => return m!"compiling old: {decls}") do
+      return compileDeclsOld (← getEnv) opts decls
+    match res with
+    | Except.ok env => setEnv env
+    | Except.error (KernelException.other msg) =>
+      checkUnsupported decl -- Generate nicer error message for unsupported recursors and axioms
+      throwError msg
+    | Except.error ex =>
+      throwKernelException ex
 
 def compileDecls (decls : List Name) : CoreM Unit := do
   let opts ← getOptions
   if compiler.enableNew.get opts then
     compileDeclsNew decls
-  match compileDeclsOld (← getEnv) opts decls with
-  | Except.ok env   => setEnv env
-  | Except.error (KernelException.other msg) =>
-    throwError msg
-  | Except.error ex =>
-    throwKernelException ex
+  else
+    match compileDeclsOld (← getEnv) opts decls with
+    | Except.ok env   => setEnv env
+    | Except.error (KernelException.other msg) =>
+      throwError msg
+    | Except.error ex =>
+      throwKernelException ex
 
 def getDiag (opts : Options) : Bool :=
   diagnostics.get opts
